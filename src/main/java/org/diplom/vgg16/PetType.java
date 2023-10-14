@@ -1,4 +1,4 @@
-package neuralnet.vgg16;
+package org.diplom.vgg16;
 
 public enum PetType {
     CAT,

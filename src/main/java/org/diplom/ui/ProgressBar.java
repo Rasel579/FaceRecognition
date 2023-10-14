@@ -1,4 +1,4 @@
-package ui;
+package org.diplom.ui;
 
 import javax.swing.*;
 import java.awt.*;

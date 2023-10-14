@@ -1,24 +1,23 @@
-package neuralnet.vgg16;
+package org.diplom.vgg16;
 
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.image.loader.NativeImageLoader;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 
 public class VGG16Cat {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TrainImageNetVGG16.class);
-    private static final String TRAINED_PATH_MODEL = TrainImageNetVGG16.DATA_PATH + "/model.zip";
+    private static final Logger LOGGER = StaticLoggerBinder.getSingleton().getLoggerFactory().getLogger(VGG16Cat.class.getName());
+    private static final String TRAINED_PATH_MODEL = TrainImageNetVGG16.DATA_PATH + "/saved/modelIteration_300_epoch_0.zip";
     private static ComputationGraph computationGraph;
 
     public static void main(String[] args) throws IOException {
@@ -26,32 +25,33 @@ public class VGG16Cat {
     }
 
     public PetType detectCat(File file, Double threshold) throws IOException {
-        if (computationGraph == null ){
+        if (computationGraph == null) {
             computationGraph = loadModel();
         }
 
         computationGraph.init();
 
-        LOGGER.info("VGG16Cat::detectCat " + computationGraph.summary());
+        LOGGER.error("VGG16Cat::detectCat " + computationGraph.summary());
 
         NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
-        INDArray image = loader.asMatrix( new FileInputStream(file));
+        INDArray image = loader.asMatrix(Files.newInputStream(file.toPath()));
 
-        DataNormalization scaler = new VGG16ImagePreProcessor();
-        scaler.transform(image);
+        DataNormalization scale = new VGG16ImagePreProcessor();
+        scale.transform(image);
 
         INDArray output = computationGraph.outputSingle(false, image);
 
-        if (output.getDouble(0) > threshold){
+        if (output.getDouble(0) > threshold) {
             return PetType.CAT;
         }
 
-        if (output.getDouble(1) > threshold){
+        if (output.getDouble(1) > threshold) {
             return PetType.DOG;
         }
 
         return PetType.NOT_KNOWN;
     }
+
     private void runOnTestSet() throws IOException {
         ComputationGraph computationGraph = loadModel();
         File trainData = new File(TrainImageNetVGG16.TEST_FOLDER);
@@ -62,8 +62,13 @@ public class VGG16Cat {
 
     }
 
-    public ComputationGraph loadModel() throws IOException {
-        computationGraph = ModelSerializer.restoreComputationGraph(new File(TRAINED_PATH_MODEL));
+    public ComputationGraph loadModel()  {
+        LOGGER.error("llloooad");
+        try {
+            computationGraph = ComputationGraph.load(new File(TRAINED_PATH_MODEL), false);
+        }catch (IOException exception){
+            LOGGER.error(exception.getMessage());
+        }
         return computationGraph;
     }
 }
