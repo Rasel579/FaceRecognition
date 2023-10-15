@@ -90,7 +90,7 @@ public class TrainImageNetVGG16 {
 
         FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.NESTEROVS)
+                .updater(Updater.NESTEROVS.getIUpdaterWithDefaultConfig())
                 .seed(seed)
                 .build();
         ComputationGraph vgg16Transfer = new TransferLearning.GraphBuilder(preTrainedNet)

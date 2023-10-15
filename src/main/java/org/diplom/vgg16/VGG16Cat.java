@@ -17,7 +17,7 @@ import java.nio.file.Files;
 
 public class VGG16Cat {
     private static final Logger LOGGER = StaticLoggerBinder.getSingleton().getLoggerFactory().getLogger(VGG16Cat.class.getName());
-    private static final String TRAINED_PATH_MODEL = TrainImageNetVGG16.DATA_PATH + "/saved/modelIteration_300_epoch_0.zip";
+    private static final String TRAINED_PATH_MODEL = TrainImageNetVGG16.DATA_PATH + "/saved/modelIteration_1400_epoch_1.zip";
     private static ComputationGraph computationGraph;
 
     public static void main(String[] args) throws IOException {
