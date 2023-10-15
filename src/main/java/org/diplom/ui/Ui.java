@@ -60,7 +60,9 @@ public class Ui {
                 if (type == PetType.DOG) {
                     predictionResponse.setText("It is DOG");
                     predictionResponse.setForeground(Color.GREEN);
-                } else {
+                }
+
+                if (type != PetType.DOG && type != PetType.CAT) {
                     predictionResponse.setText("Not Sure...");
                     predictionResponse.setForeground(Color.RED);
                 }

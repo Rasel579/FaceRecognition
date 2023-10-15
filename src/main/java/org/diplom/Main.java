@@ -47,7 +47,7 @@ public class Main {
         JFrame mainFrame = new JFrame();
         mainFrame.addWindowListener(new WindowAdapter() {
             @Override
-            public void windowOpened(WindowEvent e) {
+            public void windowClosed(WindowEvent e) {
                 System.exit(0);
             }
         });
