@@ -1,4 +1,4 @@
-package neuralnet.vgg16;
+package org.diplom.vgg16;
 
 import org.apache.ant.compress.taskdefs.Unzip;
 import org.apache.commons.io.FileUtils;
@@ -14,7 +14,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -30,7 +29,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.impl.StaticLoggerBinder;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,7 +40,7 @@ import java.util.zip.Adler32;
 
 
 public class TrainImageNetVGG16 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TrainImageNetVGG16.class);
+    private static final Logger LOGGER = StaticLoggerBinder.getSingleton().getLoggerFactory().getLogger(TrainImageNetVGG16.class.getName());
     private static final long seed = 12345;
     public static final Random RANDOM_NUM_GEN = new Random(seed);
     private static final String[] ALLOWED_FORMATS = BaseImageLoader.ALLOWED_FORMATS;
@@ -73,9 +72,9 @@ public class TrainImageNetVGG16 {
 
     public static void main(String[] args) throws IOException, URISyntaxException {
         ZooModel zooModel = VGG16.builder().build();
-        LOGGER.info("TrainImageNetVGG16::Start Downloading VGG16 model...");
-        MultiLayerNetwork preTrainedNet = (MultiLayerNetwork) zooModel.initPretrained(PretrainedType.IMAGENET);
-        LOGGER.info("TrainImageNetVGG16:: " + preTrainedNet.summary());
+        LOGGER.error("TrainImageNetVGG16::Start Downloading VGG16 model...");
+        ComputationGraph  preTrainedNet = (ComputationGraph ) zooModel.initPretrained(PretrainedType.IMAGENET);
+        LOGGER.error("TrainImageNetVGG16:: " + preTrainedNet.summary());
 
         downloadAndUnzipDataForFirstTime();
 
@@ -94,19 +93,21 @@ public class TrainImageNetVGG16 {
                 .updater(Updater.NESTEROVS)
                 .seed(seed)
                 .build();
-        ComputationGraph vgg16Transfer = new TransferLearning.Builder(preTrainedNet)
+        ComputationGraph vgg16Transfer = new TransferLearning.GraphBuilder(preTrainedNet)
                 .fineTuneConfiguration(fineTuneConfiguration)
-                .setFeatureExtractor(1)
-                .addLayer(new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
+                .setFeatureExtractor(FREEZE_UNTIL_LAYER)
+                .removeVertexAndConnections("predictions")
+                .addLayer("predictions",new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nIn(4096)
                         .nOut(NUM_POSSIBLE_LABELS)
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.SOFTMAX)
-                        .build())
-                .build().toComputationGraph();
-
+                        .build(), FREEZE_UNTIL_LAYER)
+                .setOutputs("predictions")
+                .build();
+        vgg16Transfer.init();
         vgg16Transfer.setListeners(new ScoreIterationListener(5));
-        LOGGER.info("TrainImageNetVGG16:: summary" + vgg16Transfer.summary());
+        LOGGER.error("TrainImageNetVGG16:: summary" + vgg16Transfer.summary());
 
         DataSetIterator testIterator = getDataSetIterator(test.sample(PATH_FILTER, 1, 0)[0]);
 
@@ -118,7 +119,7 @@ public class TrainImageNetVGG16 {
                 vgg16Transfer.fit(trained);
                 if (i % SAVING_INTERVAL == 0 && i != 0) {
                     ModelSerializer.writeModel(vgg16Transfer, new File(SAVING_PATH + i + "_epoch_" + indexEpoch + ".zip"), false);
-                    evalOn(vgg16Transfer, devIterator, i);
+                    //evalOn(vgg16Transfer, devIterator, i);
                 }
                 i++;
             }
@@ -135,10 +136,10 @@ public class TrainImageNetVGG16 {
         if (!data.exists() || FileUtils.checksum(data, new Adler32()).getValue() != 1195241806) {
             data.delete();
             FileUtils.copyURLToFile(new URI(DATA_URL).toURL(), data);
-            LOGGER.info("TrainImageNetVGG16::downloadAndUnzipDataForFirstTime: File downloaded");
+            LOGGER.error("TrainImageNetVGG16::downloadAndUnzipDataForFirstTime: File downloaded");
         }
         if (!new File(TRAIN_FOLDER).exists()) {
-            LOGGER.info("TrainImageNetVGG16::downloadAndUnzipDataForFirstTime: unziping Data");
+            LOGGER.error("TrainImageNetVGG16::downloadAndUnzipDataForFirstTime: unziping Data");
             unzip(data);
         }
     }
@@ -153,9 +154,9 @@ public class TrainImageNetVGG16 {
     }
 
     public static void evalOn(ComputationGraph vgg16Transfer, DataSetIterator testIterator, int indexEpoch) {
-        LOGGER.info("TrainImageNetVGG16::evalOn Evaluate model at iteration " + indexEpoch + " ....");
+        LOGGER.error("TrainImageNetVGG16::evalOn Evaluate model at iteration " + indexEpoch + " ....");
         Evaluation eval = vgg16Transfer.evaluate(testIterator);
-        LOGGER.info("TrainImageNetVGG16::evalOn " + eval.stats());
+        LOGGER.error("TrainImageNetVGG16::evalOn " + eval.stats());
         testIterator.reset();
     }
 }
